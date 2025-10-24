@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>ตะกร้าสินค้า</title>
+  <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body>
+  <%- include('partials/header'); %>
+
+  <main class="cartpage">
+    <h1>ตะกร้าสินค้า</h1>
+
+    <% if (!cart || cart.length === 0) { %>
+      <p>ตะกร้าว่าง</p>
+    <% } else { %>
+      <div class="cartlayout">
+        <div class="cartlist">
+          <% cart.forEach(item => { %>
+            <div class="cartitem">
+              <img class="thumb" src="<%= item.image_url || '/images/placeholder.png' %>" alt="">
+              <div class="info">
+                <div><strong><%= item.name %></strong></div>
+                <div>ราคา: ฿<%= Number(item.price).toFixed(2) %></div>
+                <div>จำนวนที่กดซื้อ: <%= item.qty %></div>
+
+                <div class="cart-actions">
+                  <!-- ลดจำนวนลงทีละ 1 -->
+                  <form action="/cart/decrement/<%= item.id %>" method="POST">
+                    <button type="submit" class="btn-decrement">-1</button>
+                  </form>
+
+                  <!-- ลบรายการนี้ออกจากตะกร้า -->
+                  <form action="/cart/remove/<%= item.id %>" method="POST" onsubmit="return confirm('ลบรายการนี้ออกจากตะกร้า?')">
+                    <button type="submit" class="btn-remove">ลบ</button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+
+        <div class="paybox">
+          <img src="/images/qrpay.png" class="qrpay-img" ></a>
+          <p>ผู้ซื้อ: <strong><%= (user && (user.display_name || user.email)) || '-' %></strong></p>
+          <p>ราคารวม: <strong>฿<%= Number(total).toFixed(2) %></strong></p>
+
+          <form action="/cart/confirm" method="POST">
+            <button type="submit" class="confirm">ยืนยันซื้อ</button>
+          </form>
+        </div>
+      </div>
+    <% } %>
+  </main>
+</body>
+</html>

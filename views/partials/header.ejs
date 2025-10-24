@@ -1,0 +1,17 @@
+<header class="topbar">
+  <a class="logo" href="/">
+  <img src="/images/logo.png" alt="Home" class="logo-img"></a>
+  <nav class="nav">
+    
+    <a href="/cart" class="cart">🛒 <span class="badge"><%= cartCount %></span></a>
+    <% if (user) { %>
+      <span class="hello">Hi, <%= user.display_name || user.email %></span>
+      <form action="/logout" method="POST" style="display:inline">
+        <button class="linklike" type="submit">Logout</button>
+      </form>
+    <% } else { %>
+      <a href="/signin">Sign in</a>
+      <a href="/signup">Sign up</a>
+    <% } %>
+  </nav>
+</header>

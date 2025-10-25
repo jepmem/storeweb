@@ -272,7 +272,7 @@ app.post("/cart/confirm", ensureAuth, async (req, res) => {
 
 /* ------------------ STATIC ต้องวางท้าย (ป้องกันชน route) ------------------ */
 app.use(express.static(path.join(__dirname, "public")));
-
+app.use('/favicon.ico', express.static(path.join(__dirname, 'public', 'images', 'logo.png')));
 /* ------------------ HEALTH / 404 / 500 ------------------ */
 app.get("/healthz", (req, res) => res.send("ok"));
 

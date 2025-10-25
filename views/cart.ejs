@@ -3,6 +3,9 @@
 <head>
   <title>ตะกร้าสินค้า</title>
   <link rel="stylesheet" href="/styles/style.css">
+  <link rel="icon" type="image/png" href="/images/logo.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
 </head>
 <body>
   <%- include('partials/header'); %>
@@ -42,6 +45,7 @@
         <div class="paybox">
           <img src="/images/qrpay.png" class="qrpay-img" ></a>
           <p>ผู้ซื้อ: <strong><%= (user && (user.display_name || user.email)) || '-' %></strong></p>
+          <p>อีเมลล์: <strong><%= user.email %></strong> </p>
           <p>ราคารวม: <strong>฿<%= Number(total).toFixed(2) %></strong></p>
 
           <form action="/cart/confirm" method="POST">

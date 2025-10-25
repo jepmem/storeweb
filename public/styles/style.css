@@ -24,15 +24,29 @@ main{padding:24px;max-width:1000px;margin:0 auto}
 
 .btn{background:#000;color:#fff;border:none;border-radius:999px;   /* วงรี */padding:6px 16px;font-size:14px;cursor:pointer;transition:background .2s ease, transform .1s ease;}
 .btn:hover{ background:#222; transform:scale(1.04); }
-/* signin */
+/* signin ,signup*/
 .center{text-align:center;padding:60px}
 .googlebtn{display:inline-block;background:#1a73e8;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none}
+
+.auth-page { display:grid; place-items:center; padding:48px 16px 20px; }
+.auth-page h1 { margin:0 0 20px; font-size:clamp(22px,3.2vw,34px); text-align:center; }
+.auth-form { width:min(520px,92vw); display:flex; flex-direction:column; gap:14px; background:#fff; border:1px solid #e9e9ee; border-radius:14px; padding:22px 18px; box-shadow:0 8px 24px rgba(15,23,42,0.06); }
+.field { display:flex; flex-direction:column; gap:8px; }
+.field label { font-size:14px; color:#374151; font-weight:600; }
+.field input { height:42px; padding:10px 12px; border:1px solid #d1d5db; border-radius:10px; background:#fff; font-size:15px; outline:none; transition:box-shadow .15s ease, border-color .15s ease, transform .02s ease; }
+.field input:focus { border-color:#6366f1; box-shadow:0 0 0 4px rgba(99,102,241,0.15); transform:translateY(-1px); }
+.error { width:min(520px,92vw); margin:0 0 14px; color:#b91c1c; background:#fee2e2; border:1px solid #fecaca; padding:10px 12px; border-radius:10px; font-size:14px; }
+
+.muted { margin-top:14px; text-align:center; color:#6b7280; font-size:14px; }
+.muted a { color:#4f46e5; font-weight:600; text-decoration:none; }
+.muted a:hover { text-decoration:underline; }
 
 /* cart page */
 .cartlayout{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .cartitem{display:flex;gap:12px;background:#fff;border:1px solid #eee;border-radius:12px;padding:10px;margin-bottom:10px}
 .cartitem .thumb{width:70px;height:70px;border-radius:8px;object-fit:cover;background:#e9eef6;display:block}
-.paybox{background:#fff;border:1px solid #eee;border-radius:12px;padding:16px;width:auto;align-self:start}
+.paybox { display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; text-align:left; gap:8px; padding:20px; margin-top:-20px}
+
 .qr{background:#1976d2;color:#fff;height:180px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px}
 .confirm{background:#0a8f3c;color:#fff;border:none;border-radius:8px;padding:10px 16px;cursor:pointer}
 
@@ -50,3 +64,37 @@ main{padding:24px;max-width:1000px;margin:0 auto}
 .btn-remove:hover{ background:#222; transform:scale(1.04); }
 
 
+@media (max-width:480px){
+  .topbar{padding:10px 12px;gap:8px;}
+  .logo-img { height:45px; width:auto; vertical-align:middle; transition:transform 0.2s ease; }
+  .nav{gap:10px;}
+  .nav a,.hello,.linklike{font-size:13px;}
+  .nav .cart{font-size:20px;}
+  main{padding:10px;max-width:100%;}
+  h1,.home-title{font-size:clamp(16px,4.5vw,22px);line-height:1.25;margin:8px 0 10px;}
+  .grid{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .card{padding:8px;border-radius:10px;font-size:13px;}
+  .card img{height:100px;border-radius:8px;}
+  .card h3{font-size:12px;line-height:1.25;margin:6px 0 4px;}
+  .card .price{font-size:12px;font-weight:700;margin:2px 0;}
+  .card .stock{font-size:12px;color:#666;margin-bottom:4px;}
+  .buyrow{gap:6px;}
+  .btn{padding:6px 10px;font-size:12px;}
+  .auth-page{padding:16px 10px 28px;}
+  .auth-form{width:88vw;max-width:460px;padding:14px 12px;border-radius:12px;}
+  .error{width:94vw;margin:0 auto 12px;}
+  .field label{font-size:12px;}
+  .field input{height:40px;font-size:14px;padding:10px 12px;}
+  .btn.btn-primary{padding:10px 12px;font-size:13px;}
+  .muted{font-size:12px;margin-top:10px;}
+}
+
+@media (max-width:800px) {
+  .cartlayout { display:flex; flex-direction:column; gap:20px; }
+  .cartlist { order:1; }
+  .paybox { order:2;display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-start; text-align:left; gap:8px; padding:20px; }
+  .qrpay-img, .qr { height:auto; max-width:300px; margin:0 auto; display:block; }
+  .confirm { display:block; width:100%; max-width:160px; margin:12px auto 0; padding:10px 0; border-radius:8px; font-size:15px; }
+  .paybox{display:flex;flex-direction:column;align-items:center;gap:5px;padding:30px;}
+  .paybox p { align-self:flex-start; }
+}

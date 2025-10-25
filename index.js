@@ -16,20 +16,23 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(bodyParser.urlencoded({ extended: false }));
 
 /** ---------- DB ---------- */
-const pool = new Pool({
-  user: "postgres",
-  host: "localhost",
-  database: "webstore",
-  password: "skz42130",
-  port: 5432,
-});
+ 
+const isProd = process.env.NODE_ENV === "production";
+if (isProd) app.set("trust proxy", 1);
 
-/** ---------- Session ---------- */
 app.use(session({
   secret: process.env.SESSION_SECRET || "dev-secret-change-me",
   resave: false,
   saveUninitialized: false,
+  cookie: isProd ? { secure: true, sameSite: "lax" } : {}
 }));
+
+const pool = new Pool(
+  isProd
+    ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } } // 🟢 Render
+    : { user: "postgres", host: "localhost", database: "webstore", password: "skz42130", port: 5432 } // 🧩 Local
+);
+
 
 /** ---------- Utils ---------- */
 function ensureAuth(req, res, next) {
@@ -261,9 +264,9 @@ app.post("/cart/confirm", ensureAuth, async (req, res) => {
       const lineAmount = item.qty * item.price;
 
       await client.query(
-        `INSERT INTO payment (payment_id, member_id, member_name, product_id, amount, checkout_id)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [paymentId, memberId, memberName, item.id, lineAmount, checkoutId]
+        `INSERT INTO payment (payment_id, member_id, member_name, product_id, amount, qty, checkout_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [paymentId, memberId, memberName, item.id, lineAmount,item.qty , checkoutId]
       );
     }
 

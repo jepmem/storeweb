@@ -5,14 +5,13 @@
   <link rel="stylesheet" href="/styles/style.css">
   <link rel="icon" type="image/png" href="/images/logo.png">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-
 </head>
 <body>
   <%- include('partials/header'); %>
 
   <main>
     <h1>JPN, Our latest products, come see what's new.</h1>
-    
+
     <% if (!products || products.length === 0) { %>
       <p>ยังไม่มีสินค้า</p>
     <% } else { %>
@@ -33,12 +32,32 @@
           </div>
         <% }); %>
       </div>
+
+      <!-- Pagination -->
+      <div class="pager">
+        <% if (typeof page !== "undefined" && typeof totalPages !== "undefined") { %>
+          <% if (page > 1) { %>
+            <a href="/?page=<%= page - 1 %>" class="prev">‹</a>
+          <% } %>
+
+          <% for (let p = 1; p <= totalPages; p++) { %>
+            <a href="/?page=<%= p %>" class="<%= p === page ? 'active' : '' %>"><%= p %></a>
+          <% } %>
+
+          <% if (page < totalPages) { %>
+            <a href="/?page=<%= page + 1 %>" class="next">›</a>
+          <% } %>
+        <% } %>
+      </div>
     <% } %>
 
     <% if (typeof ok !== "undefined") { %>
       <p class="success">สั่งซื้อสำเร็จ!</p>
     <% } %>
+
+    <% if (typeof query !== 'undefined' && query.added === '1') { %>
+      <p class="success">เพิ่มสินค้าลงตะกร้าแล้ว</p>
+    <% } %>
   </main>
-  
 </body>
 </html>

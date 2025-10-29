@@ -43,17 +43,78 @@
         </div>
 
         <div class="paybox">
-          <img src="/images/qrpay.png" class="qrpay-img" ></a>
-          <p>ผู้ซื้อ: <strong><%= (user && (user.display_name || user.email)) || '-' %></strong></p>
-          <p>อีเมลล์: <strong><%= user.email %></strong> </p>
-          <p>ราคารวม: <strong>฿<%= Number(total).toFixed(2) %></strong></p>
+      <img src="/images/qrpay.png" class="qrpay-img">
 
-          <form action="/cart/confirm" method="POST">
-            <button type="submit" class="confirm">ยืนยันซื้อ</button>
-          </form>
-        </div>
-      </div>
+        <p>ผู้ซื้อ: <strong><%= (user && (user.display_name || user.email)) || '-' %></strong></p>
+        <p>อีเมลล์: <strong><%= user.email %></strong></p>
+
+        <p>ราคารวม: <strong>฿<%= Number(total).toFixed(2) %></strong></p>
+
+      
+
+      <p>
+      แต้มสะสมของคุณ: <strong><%= userPoint %></strong> point
+      <br>
+      ใช้ได้สูงสุดในรอบนี้: <strong><%= maxUsablePoints %></strong> point
+    (= ฿<%= maxUsablePoints * 200 %>)
+  </p>
+
+  <form action="/cart/confirm" method="POST" class="usepoint-form">
+  <label for="points_to_use">แต้มสะสมที่คุณต้องการใช้ (point)</label>
+  <input
+    id="points_to_use"
+    name="points_to_use"
+    type="number"
+    min="0"
+    max="<%= maxUsablePoints %>"
+    value="0"
+    step="1"
+    required
+    style="width: 80px; margin-left: 8px;"
+  >
+
+  <p style="font-size: 0.9rem; opacity: .8; margin-top: 6px;">
+  * 1 point = ฿200 ส่วนลด
+  <br>
+  <span id="discount-preview">ส่วนลด ฿<%= discountPreview %></span>
+  <div id="final-preview" class="pay-final">
+    <span class="pay-label">ราคาสุทธิ</span>
+    <strong>฿<%= finalPreview.toFixed(2) %></strong>
+  </div>
+</p>
+
+  <button type="submit" class="confirm">ยืนยันซื้อ</button>
+</form>
+</div>
+</div>
     <% } %>
   </main>
+  <script>
+  const total = Number("<%= total %>");
+  const pointRate = 200;
+
+  const input = document.getElementById("points_to_use");
+  const discountEl = document.getElementById("discount-preview");
+  const finalEl = document.getElementById("final-preview");
+
+  function updatePreview() {
+    const usePoints = parseInt(input.value || 0, 10);
+    const discount = usePoints * pointRate;
+    const final = Math.max(0, total - discount);
+
+    // บรรทัดส่วนลด
+    discountEl.textContent = `ส่วนลด ฿${discount.toLocaleString()}`;
+
+    // บรรทัดใหม่: จ่ายจริง ราคา (ตัวใหญ่สีน้ำเงิน)
+    finalEl.innerHTML = `
+      <span class="pay-label">ราคาสุทธิ</span>
+      <strong>฿${final.toLocaleString()}</strong>
+    `;
+  }
+
+  input.addEventListener("input", updatePreview);
+  updatePreview();
+</script>
+
 </body>
 </html>

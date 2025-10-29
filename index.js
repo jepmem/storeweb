@@ -1,4 +1,3 @@
-// index.js
 const express = require("express");
 require("dotenv").config();
 const path = require("path");
@@ -33,7 +32,7 @@ app.use(
 const pool = new Pool(
   isProd
     ? { connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } } // Render
-    : { user: "postgres", host: "localhost", database: "webstore", password: "skz42130", port: 5432 } // Local
+    : { user: "postgres", host: "localhost", database: "webstore", password: process.env.DB_PASSWORD, port: 5432 } // Local
 );
 
 /* ------------------ UTILS ------------------ */
@@ -69,26 +68,30 @@ app.post("/signup", async (req, res) => {
   if (!email || !password) return res.render("signup", { error: "กรอกอีเมลและรหัสผ่าน" });
 
   try {
-    const exist = await pool.query("SELECT member_id FROM member WHERE email=$1", [email]);
+    // กัน email ซ้ำ
+    const exist = await pool.query("SELECT member_id FROM member WHERE email = $1", [email]);
     if (exist.rowCount > 0) {
       return res.render("signup", { error: "อีเมลนี้มีผู้ใช้แล้ว" });
     }
 
     const hash = await bcrypt.hash(password, 12);
-    const memberId = Date.now().toString().slice(-10); // ง่าย ๆ พอใช้ได้ในเดโม
+    const memberId = Date.now().toString().slice(-10); // 10 หลัก
 
+    
     await pool.query(
-      "INSERT INTO member (member_id, member_name, point, tel, email, password_hash) VALUES ($1,$2,0,$3,$4,$5)",
-      [memberId, name || email.split("@")[0], null, email, hash]
+      `INSERT INTO member (member_id, member_name, point, email, password_hash)
+       VALUES ($1, $2, 0, $3, $4)`,
+      [memberId, name || email.split("@")[0], email, hash]
     );
 
     req.session.user = { id: memberId, display_name: name || email.split("@")[0], email };
     res.redirect("/");
   } catch (err) {
-    console.error("signup error", err);
+    console.error("signup error:", err); // ดู error จริงใน console
     res.render("signup", { error: "เกิดข้อผิดพลาด กรุณาลองใหม่" });
   }
 });
+
 
 // Sign in (GET)
 app.get("/signin", (req, res) => {
@@ -136,6 +139,9 @@ app.post("/logout", (req, res) => {
 /* ------------------ PRODUCT / CART / ORDER ------------------ */
 // Home
 app.get("/", async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page || "1"));
+  const perPage = 16; // จำนวนสินค้าในแต่ละหน้า
+  const offset = (page - 1) * perPage;
   const { rows: products } = await pool.query(`
     SELECT 
       p.product_id AS id,
@@ -146,8 +152,14 @@ app.get("/", async (req, res) => {
     FROM product p
     LEFT JOIN inventory i ON i.product_id = p.product_id
     ORDER BY p.product_id
-  `);
-  res.render("home", { products, ok: req.query.ok });
+    LIMIT $1 OFFSET $2
+  `, [perPage, offset]);
+
+  const { rows: totalRows } = await pool.query(`SELECT COUNT(*)::int AS total FROM product`);
+  const total = totalRows[0].total;
+  const totalPages = Math.ceil(total / perPage);
+
+  res.render("home", { products, page, totalPages, ok: req.query.ok });
 });
 
 // Success page
@@ -188,12 +200,38 @@ app.post("/cart/add/:id", async (req, res) => {
   res.redirect(url);
 });
 
+
 // Cart page (login required)
-app.get("/cart", ensureAuth, (req, res) => {
+app.get("/cart", ensureAuth, async (req, res) => {
   const cart = getCart(req);
   const total = cart.reduce((sum, i) => sum + i.price * i.qty, 0);
-  res.render("cart", { cart, total });
+
+  // point ปัจจุบันของสมาชิก
+  const { rows } = await pool.query(
+    "SELECT point FROM member WHERE member_id=$1",
+    [req.session.user.id]
+  );
+  const userPoint = rows[0]?.point ?? 0;
+
+  // ใช้แต้มได้สูงสุดตามกติกา:
+  // - ไม่เกินแต้มที่มี
+  // - ไม่เกินเพดานที่คูณส่วนลดแล้วเกินยอด (1 point = 200 บาท)
+  const maxUsablePoints = Math.min(userPoint, Math.floor(total / 200));
+
+  // แสดงตัวอย่างถ้าใช้ทั้งหมด (เพื่อ preview)
+  const discountPreview = maxUsablePoints * 200;
+  const finalPreview = total - discountPreview;
+
+  res.render("cart", {
+    cart,
+    total,
+    userPoint,
+    maxUsablePoints,
+    discountPreview,
+    finalPreview
+  });
 });
+
 
 // Remove a line (login required)
 app.post("/cart/remove/:id", ensureAuth, (req, res) => {
@@ -218,6 +256,7 @@ app.post("/cart/decrement/:id", ensureAuth, (req, res) => {
 });
 
 // Confirm order (login required)
+// Confirm order (login required)
 app.post("/cart/confirm", ensureAuth, async (req, res) => {
   const cart = getCart(req);
   if (cart.length === 0) return res.redirect("/cart");
@@ -226,34 +265,54 @@ app.post("/cart/confirm", ensureAuth, async (req, res) => {
   try {
     await client.query("BEGIN");
 
+    const memberId = req.session.user.id;
+
+    // โหลด point ปัจจุบัน
+    const r = await client.query("SELECT point FROM member WHERE member_id=$1 FOR UPDATE", [memberId]);
+    let userPoint = r.rows[0]?.point ?? 0;
+
+    // ยอดรวมในตะกร้า
+    const total = cart.reduce((s, i) => s + i.price * i.qty, 0);
+
+    // แต้มที่ผู้ใช้ขอใช้มาจากฟอร์ม
+    const asked = parseInt(req.body.points_to_use || "0", 10) || 0;
+
+    // จำกัดจำนวนแต้มที่จะใช้จริง
+    const maxUsable = Math.min(userPoint, Math.floor(total / 200));
+    const pointsUsed = Math.max(0, Math.min(asked, maxUsable));
+
+    // ส่วนลดและยอดชำระจริง
+    const discount = pointsUsed * 200;
+    const finalTotal = total - discount;
+
+    // แต้มที่ได้รับใหม่ (คำนวณจากยอดที่จ่ายจริง)
+    const pointsEarned = Math.floor(finalTotal / 2000);
+
+    // อัปเดตแต้ม: หักที่ใช้ + บวกที่ได้ใหม่
+    const newPoints = userPoint - pointsUsed + pointsEarned;
+    await client.query("UPDATE member SET point=$1 WHERE member_id=$2", [newPoints, memberId]);
+
+    // สร้าง checkoutId และบันทึก payment + ตัดสต็อก
     const checkoutId = "CK" + Math.floor(Math.random() * 1e8).toString().padStart(8, "0");
-    const memberId = req.session.user?.id || null;
-    const memberName = req.session.user?.display_name || req.session.user?.email || "Guest";
+    const memberName = req.session.user.display_name || req.session.user.email;
 
     for (const item of cart) {
-      // Lock & check stock
+      // เช็คและล๊อคสต็อก
       const inv = await client.query(
-        "SELECT stock FROM inventory WHERE product_id = $1 FOR UPDATE",
+        "SELECT stock FROM inventory WHERE product_id=$1 FOR UPDATE",
         [item.id]
       );
       if (!inv.rows.length) throw new Error("No inventory record for product");
       if (Number(inv.rows[0].stock) < item.qty) throw new Error(`Not enough stock for ${item.id}`);
 
-      // Decrease stock
-      await client.query("UPDATE inventory SET stock = stock - $1 WHERE product_id = $2", [
-        item.qty,
-        item.id,
-      ]);
+      await client.query("UPDATE inventory SET stock = stock - $1 WHERE product_id = $2", [item.qty, item.id]);
 
       const paymentId = "PM" + Math.floor(Math.random() * 1e8).toString().padStart(6, "0");
       const lineAmount = item.qty * item.price;
 
-      // ต้องมี column qty ใน payment ด้วย (ALTER TABLE เพิ่มแล้ว)
       await client.query(
-        `
-        INSERT INTO payment (payment_id, member_id, member_name, product_id, amount, qty, checkout_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
-      `,
+        `INSERT INTO payment (payment_id, member_id, member_name, product_id, amount, qty, checkout_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
         [paymentId, memberId, memberName, item.id, lineAmount, item.qty, checkoutId]
       );
     }

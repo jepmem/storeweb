@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <title>โปรไฟล์</title>
+  <link rel="stylesheet" href="/styles/style.css">
+</head>
+<body>
+
+  <%- include('partials/header') %>
+
+  <div class="container profile-container">
+    <h2>แก้ไขโปรไฟล์</h2>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        บันทึกข้อมูลเรียบร้อยแล้ว
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-error">
+        <%= error %>
+      </div>
+    <% } %>
+
+    <!-- ฟอร์มแก้ไขโปรไฟล์ -->
+    <form id="profileForm" action="/profile" method="post">
+      <div class="form-group">
+        <label for="member_name">ชื่อที่แสดง</label><br />
+        <input
+          type="text"
+          id="member_name"
+          name="member_name"
+          value="<%= memberName %>"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label for="email">อีเมล</label><br />
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value="<%= email %>"
+          required
+        />
+      </div>
+
+      <button type="button" class="btn btn-primary" onclick="openModal('confirmEditModal')">
+        บันทึก
+      </button>
+      
+    </form>
+
+    <!-- ฟอร์มลบบัญชี -->
+    <form id="deleteForm" action="/account/delete" method="POST">
+      <button
+        type="button"
+        class="btn btn-danger delete-btn"
+        onclick="openModal('confirmDeleteModal')"
+      >
+        ลบบัญชี
+      </button>
+    </form>
+  </div>
+
+  <!-- Popup: ยืนยันแก้ไขโปรไฟล์ -->
+  <div id="confirmEditModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-title">ยืนยันการบันทึกโปรไฟล์</div>
+      <div class="modal-text">
+        ต้องการบันทึกการเปลี่ยนแปลงชื่อและอีเมลหรือไม่?
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" onclick="closeModal('confirmEditModal')">
+          ยกเลิก
+        </button>
+        <button class="btn btn-primary2" type="button" onclick="submitForm('profileForm')">
+          ยืนยัน
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popup: ยืนยันลบบัญชี -->
+  <div id="confirmDeleteModal" class="modal-backdrop">
+    <div class="modal-box">
+      <div class="modal-title">ยืนยันการปิดบัญชี</div>
+      <div class="modal-text">
+        เมื่อปิดบัญชี คุณจะไม่สามารถใช้งานบัญชีนี้ได้อีก<br />
+        ต้องการปิดบัญชีใช่หรือไม่?
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" type="button" onclick="closeModal('confirmDeleteModal')">
+          ยกเลิก
+        </button>
+        <button class="btn btn-danger" type="button" onclick="submitForm('deleteForm')">
+          ยืนยันปิดบัญชี
+        </button>
+      </div>
+    </div>
+  </div>
+ 
+  <script>
+    function openModal(id) {
+      document.getElementById(id).style.display = 'flex';
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).style.display = 'none';
+    }
+
+    function submitForm(formId) {
+      document.getElementById(formId).submit();
+    }
+  </script>
+
+</body>
+</html>

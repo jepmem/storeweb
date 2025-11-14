@@ -105,25 +105,42 @@ app.post("/signin", async (req, res) => {
 
   try {
     const { rows } = await pool.query(
-      "SELECT member_id, member_name, email, password_hash FROM member WHERE email=$1",
+      "SELECT member_id, member_name, email, password_hash, is_active FROM member WHERE email=$1",
       [email]
     );
+
+    // 1) ไม่มีอีเมลนี้ในระบบ
     if (rows.length === 0) {
       return res.render("signin", { error: "อีเมลไม่ถูกต้อง หรือยังไม่ได้สมัคร" });
     }
+
     const row = rows[0];
-    if (!row.password_hash) {
-      return res.render("signin", { error: "บัญชีนี้ยังไม่ได้ตั้งรหัสผ่าน กรุณาสมัครใหม่หรือตั้งรหัสผ่านใหม่" });
+
+    // 2) บัญชีถูกปิดใช้งาน (soft delete)
+    if (row.is_active === false) {
+      return res.render("signin", { error: "บัญชีนี้ถูกปิดใช้งานแล้ว" });
     }
 
-    const ok = await bcrypt.compare(password, row.password_hash);
-    if (!ok) return res.render("signin", { error: "รหัสผ่านไม่ถูกต้อง" });
+    // 3) ยังไม่มี password_hash (กันกรณีแปลก ๆ)
+    if (!row.password_hash) {
+      return res.render("signin", {
+        error: "บัญชีนี้ยังไม่ได้ตั้งรหัสผ่าน กรุณาสมัครใหม่หรือตั้งรหัสผ่านใหม่",
+      });
+    }
 
+    // 4) ตรวจรหัสผ่าน
+    const ok = await bcrypt.compare(password, row.password_hash);
+    if (!ok) {
+      return res.render("signin", { error: "รหัสผ่านไม่ถูกต้อง" });
+    }
+
+    // 5) login สำเร็จ → เซ็ต session
     req.session.user = {
       id: row.member_id,
       display_name: row.member_name || email,
       email: row.email,
     };
+
     res.redirect("/");
   } catch (err) {
     console.error("signin error", err);
@@ -136,6 +153,123 @@ app.post("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/"));
 });
 
+/* ------------------ PROFILE (ต้องล็อกอิน) ------------------ */
+
+// แสดงหน้าแก้ไขโปรไฟล์
+app.get("/profile", ensureAuth, async (req, res) => {
+  try {
+    const memberId = req.session.user.id;
+
+    const { rows } = await pool.query(
+      "SELECT member_name, email FROM member WHERE member_id = $1",
+      [memberId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).send("ไม่พบข้อมูลสมาชิก");
+    }
+
+    const member = rows[0];
+
+    res.render("profile", {
+      memberName: member.member_name,
+      email: member.email,
+      error: null,
+      success: req.query.success || null,
+    });
+  } catch (err) {
+    console.error("profile get error:", err);
+    res.status(500).send("เกิดข้อผิดพลาด");
+  }
+});
+
+// รับฟอร์มแก้ไขโปรไฟล์
+app.post("/profile", ensureAuth, async (req, res) => {
+  const memberId = req.session.user.id;
+  const memberName = (req.body.member_name || "").trim();
+  const email = (req.body.email || "").trim().toLowerCase();
+
+  if (!memberName || !email) {
+    return res.render("profile", {
+      memberName,
+      email,
+      error: "กรุณากรอกชื่อและอีเมลให้ครบ",
+      success: null,
+    });
+  }
+
+  try {
+    // ดึง email เดิมก่อน
+    const { rows: currentRows } = await pool.query(
+      "SELECT email FROM member WHERE member_id = $1",
+      [memberId]
+    );
+    if (!currentRows.length) {
+      return res.status(404).send("ไม่พบข้อมูลสมาชิก");
+    }
+    const currentEmail = currentRows[0].email;
+
+    // ถ้าเปลี่ยนอีเมล ต้องเช็คว่าซ้ำกับคนอื่นไหม
+    if (email !== currentEmail) {
+      const { rowCount: countEmail } = await pool.query(
+        "SELECT 1 FROM member WHERE email = $1 AND member_id <> $2",
+        [email, memberId]
+      );
+      if (countEmail > 0) {
+        return res.render("profile", {
+          memberName,
+          email,
+          error: "อีเมลนี้มีผู้ใช้แล้ว",
+          success: null,
+        });
+      }
+    }
+
+    // อัปเดต DB
+    await pool.query(
+      "UPDATE member SET member_name = $1, email = $2 WHERE member_id = $3",
+      [memberName, email, memberId]
+    );
+    await pool.query(
+      "UPDATE payment SET member_name = $1 WHERE member_id = $2",
+      [memberName, memberId]
+    );
+    // อัปเดต session ด้วย (จะได้โชว์ชื่อใหม่บนเว็บทันที)
+    req.session.user.display_name = memberName;
+    req.session.user.email = email;
+
+    // ใช้ PRG pattern: redirect พร้อม success message
+    res.redirect("/profile?success=1");
+  } catch (err) {
+    console.error("profile post error:", err);
+    res.render("profile", {
+      memberName,
+      email,
+      error: "เกิดข้อผิดพลาด กรุณาลองใหม่",
+      success: null,
+    });
+  }
+});
+app.post("/account/delete", ensureAuth, async (req, res) => {
+  try {
+    const memberId = req.session.user.id;
+
+    // ตั้งค่า inactive (soft delete)
+    await pool.query(
+      "UPDATE member SET is_active = false WHERE member_id = $1",
+      [memberId]
+    );
+
+    // เคลียร์ session
+    req.session.destroy(() => {
+      res.redirect("/signin?deleted=1");
+    });
+
+  } catch (err) {
+    console.error("delete account error:", err);
+    res.status(500).send("ไม่สามารถลบบัญชีได้");
+  }
+});
 /* ------------------ PRODUCT / CART / ORDER ------------------ */
 // Home
 app.get("/", async (req, res) => {

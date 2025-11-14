@@ -6,7 +6,8 @@
     
     <a href="/cart" class="cart">🛒 <span class="badge"><%= cartCount %></span></a>
     <% if (user) { %>
-      <span class="hello">Hi, <%= user.display_name || user.email %></span>
+      <a href="/profile" class="hello" style="text-decoration:none;">
+    Hi, <%= user.display_name || user.email %></a>
       <form action="/logout" method="POST" style="display:inline">
         <button class="linklike" type="submit">Logout</button>
       </form>

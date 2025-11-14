@@ -35,7 +35,7 @@ main{padding:24px;max-width:1000px;margin:0 auto}
 .pager .active { background: #000; color: #fff; border-radius: 6px; padding: 4px 8px; }
 
 .btn{background:#000;color:#fff;border:none;border-radius:999px;   /* วงรี */padding:6px 16px;font-size:14px;cursor:pointer;transition:background .2s ease, transform .1s ease;}
-.btn:hover{ background:#222; transform:scale(1.04); }
+.btn:hover{  transform:scale(1.04); }
 /* signin ,signup*/
 .center{text-align:center;padding:60px}
 .googlebtn{display:inline-block;background:#1a73e8;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none}
@@ -79,6 +79,31 @@ main{padding:24px;max-width:1000px;margin:0 auto}
 .pay-final .pay-label,.pay-final strong {color: #0d6efd; font-weight: 800;font-size: 1.25rem;}
 #discount-preview {display: block;  font-size: 1rem; font-weight: 800;  color: #000000;margin-top: 8px;  }
 .paybox p {margin: 4px 0; line-height: 1.2; }
+
+/*profile*/
+.profile-container{max-width:500px;margin:40px auto;}
+.form-group{margin-bottom:12px;}
+.form-group input{width:100%;padding:8px;margin-top:6px;box-sizing:border-box;border-radius:6px;border:1px solid #ccc;}
+.alert{padding:10px;border-radius:6px;margin-bottom:15px;font-size:14px;}
+.alert-success{background:#d1e7dd;color:#0f5132;}
+.alert-error{background:#f8d7da;color:#842029;}
+.btn-link{margin-left:8px;text-decoration:underline;font-size:14px;}
+
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:none;align-items:center;justify-content:center;z-index:9999;}
+.modal-box{background:#fff;padding:20px 24px;border-radius:10px;max-width:360px;width:100%;box-shadow:0 10px 30px rgba(0,0,0,0.2);text-align:center;}
+.modal-title{font-size:18px;margin-bottom:8px;font-weight:600;}
+.modal-text{font-size:14px;margin-bottom:16px;color:#555;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px;}
+
+.btn{padding:8px 16px;border-radius:6px;border:none;cursor:pointer;font-size:14px;}
+.btn-outline{background:#000000;}
+.btn-primary{font-size:16px;background:#000000;color:#fff;}
+.btn-primary2{background:#04aa49;color:#fff;}
+.btn-danger{background:#d9534f;color:#fff;}
+.delete-btn{margin-top:22px;font-size:16px;border-radius:8px;}
+.profile-container{max-width:800px;margin:80px auto;padding:30px 20px;}
+.profile-container h2{text-align:center;font-size:32px;margin-bottom:30px;font-weight:600;}
+.form-group input{width:100%;padding:14px;margin-top:8px;font-size:18px;border-radius:8px;border:1px solid #ccc;box-sizing:border-box;}
 @media (max-width:480px){
   .topbar{padding:10px 12px;gap:8px;}
   .logo-img { height:45px; width:auto; vertical-align:middle; transition:transform 0.2s ease; }
@@ -102,6 +127,11 @@ main{padding:24px;max-width:1000px;margin:0 auto}
   .field input{height:40px;font-size:14px;padding:10px 12px;}
   .btn.btn-primary{padding:10px 12px;font-size:13px;}
   .muted{font-size:12px;margin-top:10px;}
+  .profile-container{max-width:100%;margin:40px 12px;padding:10px 0;}
+  .profile-container h2{font-size:24px;margin-bottom:20px;}
+  .profile-container .form-group input{padding:10px;font-size:16px;}
+  .profile-container .btn{padding:10px 16px;font-size:15px;}
+  .profile-container .delete-btn{padding:10px 16px;font-size:15px;}
 }
 
 @media (max-width:800px) {
@@ -124,4 +154,7 @@ main{padding:24px;max-width:1000px;margin:0 auto}
 @media (max-width: 900px) {
   .pager { right: 2vw; }
 }
+
+
+
 
